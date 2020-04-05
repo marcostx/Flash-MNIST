@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 from mnist_feature import MNISTFeature
 from torch.autograd import Variable
 import config
-import cPickle
+import pickle
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
@@ -42,7 +42,7 @@ args.cuda = not args.no_cuda and tcuda.is_available()
 torch.manual_seed(args.seed)
 if args.cuda:
     tcuda.manual_seed(args.seed)
-    
+
 
 kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
 train_loader = DataLoader(
@@ -91,10 +91,10 @@ class ShiftingAttention(nn.Module):
         super(ShiftingAttention, self).__init__()
         self.dim = dim
         self.n_att = n
-        
+
         self.attentions = nn.Conv1d(dim, n, 1, bias=True)
         self.gnorm = np.sqrt(n)
-        
+
         self.w = Parameter(glorot_normal((n,)))
         self.b = Parameter(glorot_normal((n,)))
 
@@ -104,20 +104,20 @@ class ShiftingAttention(nn.Module):
         '''scores = (N, C, L)'''
         weights = softmax_m1(scores)
         '''weights = (N, C, L), sum(weights, -1) = 1'''
-        
+
         outs = []
         for i in range(self.n_att):
             weight = weights[:,i,:]
             ''' weight = (N, L) '''
             weight = weight.unsqueeze(-1).expand_as(x)
             ''' weight = (N, L, F) '''
-            
+
             w = self.w[i].unsqueeze(0).expand(x.size(0), x.size(-1))
             b = self.b[i].unsqueeze(0).expand(x.size(0), x.size(-1))
             ''' center = (N, L, F) '''
-            
+
             o = torch.sum(x * weight, 1).squeeze(1) * w + b
-                            
+
             norm2 = torch.norm(o, 2, -1, keepdim=True).expand_as(o)
             o = o/norm2/self.gnorm
             outs.append(o)
@@ -140,7 +140,7 @@ class Net(nn.Module):
         x = self.dropout(x)
         x = self.fc(x)
         return F.log_softmax(x), weights
-        
+
 model = Net()
 if args.cuda:
     model.cuda()
@@ -155,6 +155,8 @@ def train(epoch):
         if args.cuda:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target)
+        print(data.size(), target.size())
+        exit(1)
         optimizer.zero_grad()
         output, _ = model(data)
         loss = F.nll_loss(output, target)
@@ -163,11 +165,11 @@ def train(epoch):
         pred = output.data.max(1)[1] # get the index of the max log-probability
         correct += pred.eq(target.data.view_as(pred)).cpu().sum()
         tot += len(target)
-    
+
         if batch_idx % args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}, Accuracy: {}/{} ({:.2f}%)'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
-                100. * batch_idx / len(train_loader), loss.data[0],
+                100. * batch_idx / len(train_loader), loss.data,
                 correct, tot, 100.0*correct/tot))
             correct = 0
             tot = 0
@@ -178,8 +180,8 @@ def show_weights(weights):
         for w in line:
             s += '%6.1f'%w
         s += '\n'
-    print s[:-1]
-    
+    print(s[:-1])
+
 def test(epoch):
     model.eval()
     test_loss = 0
@@ -188,42 +190,41 @@ def test(epoch):
     cnt_show = 0
     memory_show = []
     wrong_idx = []
-    for data, target, indexs in test_loader:       
+    for data, target, indexs in test_loader:
         if args.cuda:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data, volatile=True), Variable(target)
         output, weights = model(data)
-        test_loss += F.nll_loss(output, target, size_average=False).data[0] # sum up batch loss
+        test_loss += F.nll_loss(output, target, size_average=False).data # sum up batch loss
         pred = output.data.max(1)[1] # get the index of the max log-probability
         corrects = pred.eq(target.data.view_as(pred)).cpu()
         correct += corrects.sum()
         for idx, c in zip(indexs, corrects.numpy()):
             if not c:
                 wrong_idx.append(idx)
-        
+
         for ws, p, tar, idx in zip(weights.data.cpu().numpy(), pred.cpu().numpy(), target.data.cpu().numpy(), indexs):
             if cnt_show >= n_show:
                 break
             if p == tar:
                 memory_show.append((idx, ws))
                 cnt_show += 1
-            
+
     test_loss /= len(test_loader.dataset)
     print('\nTest Epoch: {} Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)'.format(epoch,
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
 #     print wrong_idx[:10]
-    print 
-    
+
     with open(args.logf%args.natt, 'a') as f:
         f.write('%.2f\n'%(100. * correct / len(test_loader.dataset)))
-        
+
     return memory_show
 
 def dump_pkl(obj, path):
     f = open(path, 'wb')
     try:
-        cPickle.dump(obj, f, protocol=cPickle.HIGHEST_PROTOCOL)
+        pickle.dump(obj, f)
     finally:
         f.close()
 

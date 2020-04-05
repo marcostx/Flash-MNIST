@@ -5,7 +5,7 @@ Created on Oct 23, 2017
 '''
 
 from torch.utils.data import Dataset
-from mnist_sampler import *        
+from mnist_sampler import *
 
 class MNISTFeature(Dataset):
     training_file = 'feature_train.pkl'
@@ -51,11 +51,11 @@ class MNISTFeature(Dataset):
 #         return True
         return os.path.exists(os.path.join(self.root, self.training_file)) and \
             os.path.exists(os.path.join(self.root, self.test_file))
-    
-            
+
+
 if __name__ == '__main__':
     dataset = MNISTFeature(train=True)
-    print len(dataset)
-     
+    print(len(dataset))
+
     dataset = MNISTFeature(train=False)
-    print len(dataset)
+    print(len(dataset))

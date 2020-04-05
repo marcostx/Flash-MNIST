@@ -36,7 +36,7 @@ args.cuda = not args.no_cuda and tcuda.is_available()
 class VideoWrap(object):
     def __init__(self, transform):
         self.transform = transform
-    
+
     def __call__(self, video):
         res = []
         for img in video:
@@ -52,7 +52,7 @@ train_loader = DataLoader(
                        transforms.Compose([
                            transforms.ToTensor(),
                            transforms.Normalize((0.1307,), (0.3081,))
-                           ])  
+                           ])
                     )
               ),
     batch_size=args.batch_size, shuffle=False, **kwargs)
@@ -62,7 +62,7 @@ test_loader = DataLoader(
                        transforms.Compose([
                            transforms.ToTensor(),
                            transforms.Normalize((0.1307,), (0.3081,))
-                           ])  
+                           ])
                     )
               ),
     batch_size=args.test_batch_size, shuffle=False, **kwargs)
@@ -83,8 +83,8 @@ class Extractor(nn.Module):
         x = F.relu(self.fc1(x))
         x = F.dropout(x, training=self.training)
         return F.log_softmax(x)
-        
-        
+
+
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
@@ -99,7 +99,7 @@ class Net(nn.Module):
         x = flatx.view(batch_size, length, -1)
 #         print x.size()
         return x
-        
+
 
 model = Net()
 checkpoint_path = config.get_model_path("extractor_%03d"%args.epoch)
@@ -116,7 +116,7 @@ def extract(loader, path):
     indexs = []
     for i, (data, target, idxs) in enumerate(loader):
         if i % args.log_interval == 0:
-            print '%d/%d'%(i, len(loader))
+            print('%d/%d'%(i, len(loader)))
         if args.cuda:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data, volatile=True), Variable(target)
@@ -128,6 +128,6 @@ def extract(loader, path):
 #             print idx, f.shape, f.dtype
 
     dump_pkl((feats, labels, indexs), path)
-      
+
 extract(train_loader, os.path.join(config.data_dir, MNISTFeature.training_file))
-extract(test_loader, os.path.join(config.data_dir, MNISTFeature.test_file))   
+extract(test_loader, os.path.join(config.data_dir, MNISTFeature.test_file))

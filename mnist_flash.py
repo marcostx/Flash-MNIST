@@ -39,42 +39,42 @@ def get_numbers(label):
 def generate_dataset(train=True, k=K_train, b=B, s=S):
     img_sampler = get_noisy_sampler()
     num_sampler = get_number_sampler(load_mnist(train))
-    
+
     datas = []
     idx = 0
     for j in range(1<<b):
         for _ in range(k):
             if (idx+1)%1000 == 0 or idx+1 == k*(1<<b):
-                print '%d/%d'%(idx+1, k*(1<<b))
+                print('%d/%d'%(idx+1, k*(1<<b)))
             idx += 1
             frames = []
 
             numbers = get_numbers(j)
-            
+
             for i in numbers:
                 for _ in range(np.random.randint(s)+1):
                     img = img_sampler.sample((H,W))
                     num = num_sampler.sample(i)
                     put_numbers(img, num)
                     frames.append(img)
-            
+
             for i in range(L-len(frames)):
                 img = img_sampler.sample((H,W))
                 frames.append(img)
-            
+
             np.random.shuffle(frames)
             video = np.array(frames)
             datas.append((video, j))
     return datas
 
 def save_pkl(datas, path):
-    print 'save pkl to: %s'%path
+    print('save pkl to: %s'%path)
     train_imgs, train_labels = zip(*datas)
     dump_pkl((train_imgs, train_labels), path)
-    
+
 
 def save_images(datas, image_dir):
-    print 'save videos to: %s' %image_dir
+    print('save videos to: %s' %image_dir)
     if not os.path.exists(image_dir):
         os.makedirs(image_dir)
     idx = 0
@@ -87,7 +87,7 @@ def save_images(datas, image_dir):
         img = to_image(img)
         img.save(os.path.join(image_dir, '%s %06d.bmp'%(label_to_str(label), idx)))
         idx += 1
-        
+
 
 class MNISTFlash(Dataset):
     training_images_root = 'flash_train'
@@ -141,17 +141,17 @@ class MNISTFlash(Dataset):
 #         return True
         return os.path.exists(os.path.join(self.root, self.training_file)) and \
             os.path.exists(os.path.join(self.root, self.test_file))
-    
+
     def generate(self, force_generate):
         if self._check_exists() and not force_generate:
             return
-        
+
         datas = generate_dataset(train=True, k=K_train)
         save_pkl(datas, os.path.join(self.root, self.training_file))
-        
+
         datas = generate_dataset(train=False, k=K_test)
         save_pkl(datas, os.path.join(self.root, self.test_file))
-   
+
     def save_image(self):
         if self.train:
             image_root = os.path.join(config.data_dir, self.training_images_root)
@@ -163,15 +163,15 @@ class MNISTFlash(Dataset):
             if os.path.exists(image_root):
                 shutil.rmtree(image_root)
             save_images(zip(self.test_data, self.test_labels), image_root)
-            
-            
+
+
 if __name__ == '__main__':
     dataset = MNISTFlash(train=False, generate=True, force_generate=True)
 
 #     dataset = MNISTFlash(train=True)
 #     print len(dataset)
 #     dataset.save_image()
-     
+
 #     dataset = MNISTFlash(train=False)
 #     print len(dataset)
 #     dataset.save_image()

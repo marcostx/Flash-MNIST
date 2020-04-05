@@ -72,8 +72,8 @@ class Extractor(nn.Module):
         x = F.relu(self.fc1(x))
         x = F.dropout(x, training=self.training)
         return F.log_softmax(x)
-        
-        
+
+
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
@@ -84,7 +84,7 @@ class Net(nn.Module):
         x = self.extractor(x)
         x = self.fc2(x)
         return F.log_softmax(x)
-        
+
 
 model = Net()
 
@@ -109,11 +109,11 @@ def train(epoch):
         pred = output.data.max(1)[1] # get the index of the max log-probability
         correct += pred.eq(target.data.view_as(pred)).cpu().sum()
         tot += len(target)
-    
+
         if batch_idx % args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}, Accuracy: {}/{} ({:.2f}%)'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
-                100. * batch_idx / len(train_loader), loss.data[0],
+                100. * batch_idx / len(train_loader), loss.data,
                 correct, tot, 100.0*correct/tot))
             correct = 0
             tot = 0
@@ -128,7 +128,7 @@ def test():
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data, volatile=True), Variable(target)
         output = model(data)
-        test_loss += F.nll_loss(output, target, size_average=False).data[0] # sum up batch loss
+        test_loss += F.nll_loss(output, target, size_average=False).data     # sum up batch loss
         pred = output.data.max(1)[1] # get the index of the max log-probability
         corrects = pred.eq(target.data.view_as(pred)).cpu()
         correct += corrects.sum()
@@ -140,18 +140,17 @@ def test():
     print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)\n'.format(
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
-    
+
 #     print wrong_idx[:10]
     return 100. * correct / len(test_loader.dataset)
 
 def save_checkpoint(epoch):
     state = model.extractor.state_dict()
     file_path = config.get_model_path('extractor_%03d'%epoch)
-    print 'save checkpoint: %s'%file_path
+    print('save checkpoint: %s'%file_path)
     torch.save(state, file_path)
-       
+
 for epoch in range(1, args.epochs + 1):
     train(epoch)
     acc = test()
     save_checkpoint(epoch)
-    

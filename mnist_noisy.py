@@ -23,31 +23,31 @@ def generate_dataset(train=True, n_noisy=N_noisy_train, k=K_train):
     img_sampler = get_noisy_sampler()
     num_sampler = get_number_sampler(load_mnist(train))
     for i in range(10):
-        print 'Generate for number %d ...'%i
+        print('Generate for number %d ...'%i)
         idx = 0
         for _ in range(k):
             for num in num_sampler.numbers[i]:
-                img =  img_sampler.sample((H,W))   
+                img =  img_sampler.sample((H,W))
                 put_numbers(img, num)
                 datas.append((img, i))
                 idx += 1
                 if idx%10000 == 0:
-                    print idx
-    print 'Generate for noisy ...'
+                    print(idx)
+    print('Generate for noisy ...')
     for idx in range(n_noisy):
-        img =  img_sampler.sample((H,W))   
-        datas.append((img, 10)) 
+        img =  img_sampler.sample((H,W))
+        datas.append((img, 10))
         if (idx+1)%10000 == 0:
-            print idx+1
+            print(idx+1)
     return datas
 
 def save_pkl(datas, path):
-    print 'save pkl to: %s'%path
+    print('save pkl to: %s'%path)
     train_imgs, train_labels = zip(*datas)
     dump_pkl((train_imgs, train_labels), path)
-    
+
 def save_images(datas, image_dir):
-    print 'save images to: %s' %image_dir
+    print('save images to: %s' %image_dir)
     if not os.path.exists(image_dir):
         os.makedirs(image_dir)
     idx = 0
@@ -108,17 +108,17 @@ class MNISTNoisy(Dataset):
     def _check_exists(self):
         return os.path.exists(os.path.join(self.root, self.training_file)) and \
             os.path.exists(os.path.join(self.root, self.test_file))
-    
+
     def generate(self, force_generate):
         if self._check_exists() and not force_generate:
             return
-        
+
         datas = generate_dataset(train=True, n_noisy=N_noisy_train, k=K_train)
         save_pkl(datas, os.path.join(self.root, self.training_file))
-        
+
         datas = generate_dataset(train=False, n_noisy=N_noisy_test, k=K_test)
         save_pkl(datas, os.path.join(self.root, self.test_file))
-   
+
     def save_image(self):
         if self.train:
             image_root = os.path.join(config.data_dir, self.training_images_root)
@@ -130,16 +130,15 @@ class MNISTNoisy(Dataset):
             if os.path.exists(image_root):
                 shutil.rmtree(image_root)
             save_images(zip(self.test_data, self.test_labels), image_root)
-            
-            
+
+
 if __name__ == '__main__':
     dataset = MNISTNoisy(train=True, generate=True, force_generate=True)
 
     dataset = MNISTNoisy(train=True)
-    print len(dataset)
+    print(len(dataset))
 #     mnist_multi.save_image()
-    
+
     dataset = MNISTNoisy(train=False)
-    print len(dataset)
+    print(len(dataset))
 #     dataset.save_image()
-        
